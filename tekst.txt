@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dicking - Neuro-Aesthetic Well-being</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Inter', sans-serif; color: #fff; }
+        canvas { display: block; position: fixed; inset: 0; z-index: 1; }
+        .screen { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; transition: opacity 1s ease, visibility 1s; background: rgba(0,0,0,0.9); }
+        .hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .glass { background: rgba(15, 15, 15, 0.95); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 3rem; max-width: 600px; width: 100%; }
+        .btn-primary { background: #fff; color: #000; font-weight: 900; padding: 1.25rem 2.5rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.1em; transition: all 0.3s; }
+        .btn-primary:hover { background: #8b5cf6; color: #fff; transform: scale(1.05); }
+        .survey-option { border: 1px solid rgba(255,255,255,0.1); padding: 1rem; border-radius: 1rem; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .survey-option:hover { background: rgba(139, 92, 246, 0.2); border-color: #8b5cf6; }
+        .survey-option.selected { background: #8b5cf6; border-color: #a78bfa; color: white; }
+        #progress-bar-container { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 20px; overflow: hidden; }
+        #progress-bar-fill { width: 0%; height: 100%; background: #8b5cf6; transition: width 1s linear; }
+    </style>
+</head>
+<body>
+
+    <canvas id="hypnoCanvas"></canvas>
+
+    <!-- 1. EKRAN POWITALNY -->
+    <div id="screen-welcome" class="screen">
+        <div class="glass p-10 text-center shadow-2xl border border-purple-500/20">
+            <h1 class="text-5xl font-black italic uppercase tracking-widest mb-6">Dicking</h1>
+            <h2 class="text-xl font-bold text-purple-400 mb-4 text-left">Twoja chwila na dobrobyt psychiczny</h2>
+            <div class="text-sm text-gray-400 text-left space-y-4 leading-relaxed mb-8">
+                <p>W dzisiejszym świecie przebodźcowania, Twoja kora przedczołowa jest w stanie ciągłego alarmu. Relaksacja nie jest luksusem – to biologiczna konieczność.</p>
+                <p>Badania nad <strong>reakcją relaksacyjną (Benson, 1975)</strong> dowodzą, że celowe obniżenie pobudzenia układu współczulnego redukuje stany lękowe, poprawia jakość snu i wspiera neuroplastyczność mózgu.</p>
+                <p>Ta sesja wykorzystuje <strong>fiksację wzroku</strong> oraz <strong>dudnienia binauralne Theta</strong>, aby zsynchronizować Twoje fale mózgowe ze stanem głębokiego odprężenia.</p>
+            </div>
+            <button onclick="nextScreen('welcome', 'pre-survey')" class="btn-primary">Rozpocznij proces</button>
+        </div>
+    </div>
+
+    <!-- 2. ANKIETA PRZED -->
+    <div id="screen-pre-survey" class="screen hidden">
+        <div class="glass p-10 text-center shadow-2xl">
+            <h2 class="text-2xl font-bold mb-6">Jak się teraz czujesz?</h2>
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="survey-option" onclick="selectOption(this, 'pre')">Bardzo zestresowany</div>
+                <div class="survey-option" onclick="selectOption(this, 'pre')">Napięty / Zmęczony</div>
+                <div class="survey-option" onclick="selectOption(this, 'pre')">Neutralnie</div>
+                <div class="survey-option" onclick="selectOption(this, 'pre')">Spokojnie</div>
+            </div>
+            <p class="text-xs text-gray-500 mb-6 italic uppercase tracking-widest">Twoja szczera odpowiedź pomoże Ci dostrzec zmianę po sesji.</p>
+            <button onclick="validateAndNext('pre-survey', 'instructions')" class="btn-primary">Dalej</button>
+        </div>
+    </div>
+
+    <!-- 3. INSTRUKCJA (30S) -->
+    <div id="screen-instructions" class="screen hidden">
+        <div class="glass p-12 text-center shadow-2xl border border-purple-500/30">
+            <h2 id="ins-main" class="text-3xl font-light uppercase tracking-tighter mb-4">Przygotuj się...</h2>
+            <p id="ins-sub" class="text-purple-400 text-xs uppercase tracking-[0.3em] font-bold">Krok 1: Głęboki wdech i wydech</p>
+            <div id="progress-bar-container"><div id="progress-bar-fill"></div></div>
+            <div class="mt-8 text-[10px] text-gray-500 uppercase tracking-widest">
+                Skup wzrok na pulsującym punkcie. Podążaj za ruchem anatomicznym.
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. EKRAN PO SESJI -->
+    <div id="screen-post-survey" class="screen hidden">
+        <div class="glass p-10 text-center shadow-2xl">
+            <h2 class="text-2xl font-bold mb-2">Sesja zakończona</h2>
+            <p class="text-sm text-purple-400 mb-8 italic">Poczuj, jak kora V5/MT adaptuje się do rzeczywistości...</p>
+            <h3 class="text-lg font-semibold mb-6">Jak oceniasz swój stan TERAZ?</h3>
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="survey-option" onclick="selectOption(this, 'post')">Ciężkość i spokój</div>
+                <div class="survey-option" onclick="selectOption(this, 'post')">Wyraźna ulga</div>
+                <div class="survey-option" onclick="selectOption(this, 'post')">Lekkie odprężenie</div>
+                <div class="survey-option" onclick="selectOption(this, 'post')">Bez zmian</div>
+            </div>
+            <textarea id="feedback" placeholder="Krótka notatka dla podświadomości (opcjonalnie)..." 
+                class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-sm mb-6 focus:border-purple-500 outline-none h-24"></textarea>
+            <button onclick="validateAndNext('post-survey', 'summary')" class="btn-primary">Podsumuj</button>
+        </div>
+    </div>
+
+    <!-- 5. PODSUMOWANIE -->
+    <div id="screen-summary" class="screen hidden">
+        <div class="glass p-12 text-center shadow-2xl">
+            <h2 class="text-4xl font-black italic mb-6">Gratulacje</h2>
+            <p class="text-gray-400 mb-8">Poświęcenie czasu na relaksację to akt odwagi w świecie pędu. Twój układ nerwowy przeszedł właśnie proces synchronizacji.</p>
+            <div id="summary-result" class="bg-purple-900/20 p-6 rounded-2xl mb-8 border border-purple-500/10 italic text-sm text-purple-200">
+                AI analizuje Twoją zmianę...
+            </div>
+            <button onclick="location.reload()" class="btn-primary">Zakończ i wróć</button>
+        </div>
+    </div>
+
+    <!-- Panel Sterowania Sesją (tylko w trakcie sesji) -->
+    <div id="session-controls" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[60] opacity-0 pointer-events-none transition-opacity duration-1000">
+        <button onclick="finishSession()" class="bg-black/50 hover:bg-black border border-white/20 px-8 py-3 rounded-full text-[10px] uppercase tracking-widest font-bold">Zakończ Sesję</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('hypnoCanvas');
+        const ctx = canvas.getContext('2d');
+        let active = false, isIntro = false, time = 0, swing = 0;
+        let audioCtx, nodes = [];
+        let preValue = '', postValue = '';
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- RENDERER ---
+        function drawSpiral(cx, cy) {
+            const bands = 45, maxR = Math.max(canvas.width, canvas.height) * 1.5;
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(time * 0.25);
+            for (let i = bands; i > 0; i--) {
+                const r = (i * (maxR / bands) + (time * 120)) % maxR;
+                ctx.beginPath(); ctx.arc(0, 0, Math.abs(r), 0, Math.PI * 2);
+                ctx.strokeStyle = i % 2 === 0 ? "#fff" : "#000";
+                ctx.lineWidth = (maxR / bands) * 0.9; ctx.stroke();
+            }
+            ctx.restore();
+            time += active ? 0.03 : 0.005;
+        }
+
+        function drawAnatomy(cx, cy) {
+            const len = 320, amp = Math.PI / 4;
+            const angle = Math.sin(swing) * amp;
+            if (active && !isIntro) swing += 0.04;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            const drawPart = (ox, oy) => {
+                const g = ctx.createRadialGradient(ox, oy, 0, ox, oy, 70);
+                g.addColorStop(0, "#fce4d6"); g.addColorStop(0.4, "#d08b74"); g.addColorStop(0.9, "#8d5543"); g.addColorStop(1, "#000");
+                ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ox, oy, 62, 0, Math.PI * 2); ctx.fill();
+            };
+            drawPart(-55, 20); drawPart(55, 20);
+
+            ctx.rotate(angle);
+            const shaftG = ctx.createLinearGradient(-45, 0, 45, 0);
+            shaftG.addColorStop(0, "#8d5543"); shaftG.addColorStop(0.3, "#d08b74"); shaftG.addColorStop(0.5, "#fce4d6"); shaftG.addColorStop(0.7, "#d08b74"); shaftG.addColorStop(1, "#8d5543");
+            ctx.fillStyle = shaftG; ctx.beginPath(); ctx.roundRect(-42, -len, 84, len, [35, 35, 0, 0]); ctx.fill();
+
+            // Żyły
+            ctx.beginPath(); ctx.moveTo(-15, -60); ctx.bezierCurveTo(-35, -140, 25, -200, 10, -280);
+            ctx.strokeStyle = "rgba(100, 50, 180, 0.15)"; ctx.lineWidth = 3; ctx.stroke();
+
+            const glansG = ctx.createRadialGradient(0, -len - 15, 8, 0, -len - 15, 75);
+            glansG.addColorStop(0, "#e894a4"); glansG.addColorStop(0.5, "#c46a80"); glansG.addColorStop(1, "#3b1622");
+            ctx.fillStyle = glansG; ctx.beginPath(); ctx.ellipse(0, -len - 10, 60, 72, 0, 0, Math.PI * 2); ctx.fill();
+
+            if (active && !isIntro) {
+                const p = (Math.sin(time * 15) + 1) * 4;
+                ctx.beginPath(); ctx.arc(0, -len - 40, 6 + p, 0, Math.PI * 2);
+                ctx.fillStyle = "#fff"; ctx.shadowBlur = 40; ctx.shadowColor = "#a78bfa"; ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function loop() {
+            const cx = canvas.width / 2, cy = canvas.height / 2;
+            ctx.fillStyle = "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            drawSpiral(cx, cy);
+            const v = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(cx, cy));
+            v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,0.95)");
+            ctx.fillStyle = v; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            drawAnatomy(cx, cy);
+            requestAnimationFrame(loop);
+        }
+        loop();
+
+        // --- AUDIO ---
+        async function setupAudio(play) {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
+            if (play) {
+                const master = audioCtx.createGain(); master.connect(audioCtx.destination);
+                master.gain.setValueAtTime(0, audioCtx.currentTime); master.gain.linearRampToValueAtTime(0.25, audioCtx.currentTime + 5);
+                const osc = (f, p, v) => {
+                    const o = audioCtx.createOscillator(); const pn = audioCtx.createPanner(); const g = audioCtx.createGain();
+                    pn.setPosition(p, 0, 0); o.frequency.value = f; g.gain.value = v;
+                    o.connect(pn); pn.connect(g); g.connect(master); o.start(); nodes.push(o, g);
+                };
+                osc(110, -1, 0.8); osc(114.5, 1, 0.8); osc(55, 0, 0.6); nodes.push(master);
+            } else {
+                nodes.forEach(n => n.stop ? n.stop() : (n.gain ? n.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1) : null));
+                nodes = [];
+            }
+        }
+
+        // --- FLOW ---
+        function nextScreen(current, next) {
+            document.getElementById('screen-' + current).classList.add('hidden');
+            document.getElementById('screen-' + next).classList.remove('hidden');
+            if (next === 'instructions') runSessionFlow();
+        }
+
+        function selectOption(el, type) {
+            const container = el.parentElement;
+            [...container.children].forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            if (type === 'pre') preValue = el.innerText;
+            else postValue = el.innerText;
+        }
+
+        function validateAndNext(current, next) {
+            if (current === 'pre-survey' && !preValue) return alert('Proszę wybrać opcję.');
+            if (current === 'post-survey' && !postValue) return alert('Proszę wybrać opcję.');
+            nextScreen(current.replace('screen-',''), next);
+        }
+
+        async function runSessionFlow() {
+            isIntro = true;
+            active = true;
+            setupAudio(true);
+            const fill = document.getElementById('progress-bar-fill');
+            const mainT = document.getElementById('ins-main');
+            const subT = document.getElementById('ins-sub');
+            const steps = [
+                { m: "Oddychaj głęboko nosem...", s: "Krok 1: Inicjacja oddechowa" },
+                { m: "Zafiksuj wzrok na żołędzi...", s: "Krok 2: Fiksacja wizualna" },
+                { m: "Podążaj wzrokiem za ruchem Dicking...", s: "Krok 3: Synchronizacja" },
+                { m: "Wszystko inne znika...", s: "Krok 4: Wejście w trans" }
+            ];
+
+            let p = 0;
+            const interval = setInterval(() => {
+                p += (1/30) * 100; fill.style.width = p + '%';
+                const idx = Math.floor((p/100) * steps.length);
+                if (steps[idx]) { mainT.innerText = steps[idx].m; subT.innerText = steps[idx].s; }
+                if (p >= 100) { 
+                    clearInterval(interval); 
+                    document.getElementById('screen-instructions').classList.add('hidden');
+                    isIntro = false;
+                    document.getElementById('session-controls').style.opacity = '1';
+                    document.getElementById('session-controls').style.pointerEvents = 'auto';
+                }
+            }, 1000);
+        }
+
+        function finishSession() {
+            active = false;
+            setupAudio(false);
+            document.getElementById('session-controls').style.opacity = '0';
+            document.getElementById('session-controls').style.pointerEvents = 'none';
+            document.getElementById('screen-post-survey').classList.remove('hidden');
+        }
+
+        // AI Summary
+        async function validateAndNextSummary(current, next) {
+            validateAndNext(current, next);
+            const summary = document.getElementById('summary-result');
+            const apiKey = "";
+            try {
+                const prompt = `Użytkownik przed sesją hipnozy Dicking czuł się: ${preValue}. Po sesji czuje się: ${postValue}. Napisz krótkie (20 słów) naukowe podsumowanie tej zmiany, wspominając o synchronizacji fal mózgowych Theta.`;
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const data = await response.json();
+                summary.innerText = data.candidates[0].content.parts[0].text;
+            } catch (e) {
+                summary.innerText = `Twoja transformacja z "${preValue}" do "${postValue}" wskazuje na skuteczne przejście układu nerwowego w stan regeneracji parasympatycznej.`;
+            }
+        }
+    </script>
+    <!-- Przeciążenie funkcji dla AI -->
+    <script>
+        const originalValidate = validateAndNext;
+        window.validateAndNext = (current, next) => {
+            if (next === 'summary') validateAndNextSummary(current, next);
+            else originalValidate(current, next);
+        };
+    </script>
+</body>
+</html>
+
