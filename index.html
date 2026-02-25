@@ -12,9 +12,7 @@
       --text: #f4f4f4;
       --muted: #bdbdbd;
     }
-
     * { box-sizing: border-box; }
-
     body {
       margin: 0;
       min-height: 100vh;
@@ -23,7 +21,6 @@
       background: #000;
       overflow: hidden;
     }
-
     canvas {
       position: fixed;
       inset: 0;
@@ -31,7 +28,6 @@
       height: 100vh;
       z-index: 0;
     }
-
     .overlay {
       position: fixed;
       inset: 0;
@@ -40,8 +36,9 @@
       place-items: center;
       padding: 1rem;
       pointer-events: none;
+      transition: opacity .5s ease;
     }
-
+    .overlay.session-active { opacity: 0.2; }
     .panel {
       width: min(560px, 92vw);
       background: var(--panel);
@@ -53,20 +50,13 @@
       pointer-events: auto;
       box-shadow: 0 14px 48px rgba(0,0,0,0.45);
     }
-
     h1 {
       margin: 0 0 0.75rem;
       font-size: clamp(1.4rem, 4vw, 2rem);
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }
-
-    p {
-      margin: 0.45rem 0;
-      color: var(--muted);
-      line-height: 1.4;
-    }
-
+    p { margin: 0.45rem 0; color: var(--muted); line-height: 1.4; }
     .controls {
       display: flex;
       justify-content: center;
@@ -74,7 +64,6 @@
       margin-top: 1.1rem;
       flex-wrap: wrap;
     }
-
     button {
       border: 0;
       border-radius: 999px;
@@ -84,26 +73,12 @@
       cursor: pointer;
       transition: transform .2s ease, opacity .2s ease;
     }
-
     button:hover { transform: translateY(-1px); }
     button:active { transform: translateY(1px); }
-
     .btn-start { background: #fff; color: #000; }
     .btn-stop { background: #2b2b2b; color: #fff; border: 1px solid #4e4e4e; }
-
-    .hint {
-      margin-top: 0.8rem;
-      font-size: 0.85rem;
-      opacity: 0.92;
-    }
-
-    .status {
-      margin-top: 0.5rem;
-      font-size: 0.82rem;
-      color: #dbdbdb;
-      min-height: 1.2em;
-    }
-
+    .hint { margin-top: 0.8rem; font-size: 0.85rem; opacity: 0.92; }
+    .status { margin-top: 0.5rem; font-size: 0.82rem; color: #dbdbdb; min-height: 1.2em; }
     .tracker {
       position: fixed;
       z-index: 1;
@@ -111,10 +86,11 @@
       height: 76px;
       transform: translate(-50%, -50%);
       pointer-events: none;
-      transition: filter .2s linear;
+      transition: filter .2s linear, opacity .4s ease;
       filter: drop-shadow(0 0 10px rgba(255,255,255,0.45));
+      opacity: 0;
     }
-
+    .tracker.visible { opacity: 1; }
     .tracker::before {
       content: "";
       position: absolute;
@@ -123,7 +99,6 @@
       background: linear-gradient(180deg, #f8d8bd, #dcad8d 72%);
       border: 2px solid rgba(0,0,0,0.3);
     }
-
     .tracker::after {
       content: "";
       position: absolute;
@@ -142,20 +117,20 @@
   <canvas id="hypno"></canvas>
   <div id="tracker" class="tracker" aria-hidden="true"></div>
 
-  <div class="overlay">
+  <div id="overlay" class="overlay">
     <section class="panel">
       <h1>Głęboka relaksacja i hipnoza</h1>
+      <p>Jedno kliknięcie „Start sesji” uruchamia od razu i wizualizację, i audio.</p>
       <p>W tle działa czarno-białe koło hipnotyczne.</p>
       <p>Patrz i podążaj wzrokiem za poruszającym się wskaźnikiem falusa.</p>
-      <p>Włącz dźwięk, aby uruchomić ambient prowadzący w spokojny stan.</p>
 
       <div class="controls">
         <button id="startBtn" class="btn-start">Start sesji</button>
-        <button id="stopBtn" class="btn-stop">Stop audio</button>
+        <button id="stopBtn" class="btn-stop">Stop sesji</button>
       </div>
 
       <p class="hint">Najlepiej używać słuchawek i spokojnie oddychać przez 2–5 minut.</p>
-      <div id="status" class="status"></div>
+      <div id="status" class="status">Kliknij Start, żeby uruchomić wszystko.</div>
     </section>
   </div>
 
@@ -163,6 +138,7 @@
     const canvas = document.getElementById('hypno');
     const ctx = canvas.getContext('2d');
     const tracker = document.getElementById('tracker');
+    const overlay = document.getElementById('overlay');
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
     const status = document.getElementById('status');
@@ -170,6 +146,8 @@
     let width = 0;
     let height = 0;
     let t = 0;
+    let sessionActive = false;
+    let animationId = null;
     let audioCtx;
     let masterGain;
     let audioNodes = [];
@@ -182,7 +160,19 @@
     window.addEventListener('resize', resize);
     resize();
 
+    function drawIdle() {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, width, height);
+      const gradient = ctx.createRadialGradient(width/2, height/2, 20, width/2, height/2, Math.min(width, height) * 0.5);
+      gradient.addColorStop(0, '#2b2b2b');
+      gradient.addColorStop(1, '#000');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+    }
+
     function drawHypno(time) {
+      if (!sessionActive) return;
+
       t = time * 0.001;
       const cx = width / 2;
       const cy = height / 2;
@@ -212,10 +202,8 @@
       tracker.style.top = `${y}px`;
       tracker.style.transform = `translate(-50%, -50%) rotate(${Math.sin(t * 1.35) * 18}deg)`;
 
-      requestAnimationFrame(drawHypno);
+      animationId = requestAnimationFrame(drawHypno);
     }
-
-    requestAnimationFrame(drawHypno);
 
     function setStatus(message) {
       status.textContent = message;
@@ -240,10 +228,8 @@
       const left = audioCtx.createOscillator();
       const right = audioCtx.createOscillator();
       const drone = audioCtx.createOscillator();
-
       const leftPan = audioCtx.createStereoPanner();
       const rightPan = audioCtx.createStereoPanner();
-
       const leftGain = audioCtx.createGain();
       const rightGain = audioCtx.createGain();
       const droneGain = audioCtx.createGain();
@@ -272,7 +258,6 @@
       drone.start();
 
       audioNodes = [left, right, drone];
-      setStatus('Audio aktywne: binauralny ambient uruchomiony.');
     }
 
     function stopAudio() {
@@ -290,18 +275,47 @@
       });
 
       audioNodes = [];
-      setStatus('Audio zatrzymane. Możesz uruchomić ponownie.');
     }
 
-    startBtn.addEventListener('click', async () => {
+    async function startSession() {
+      if (sessionActive) return;
+
+      sessionActive = true;
+      tracker.classList.add('visible');
+      overlay.classList.add('session-active');
+      startBtn.disabled = true;
+      setStatus('Uruchamianie sesji...');
+
       try {
         await startAudio();
-      } catch (err) {
-        setStatus('Nie udało się uruchomić audio. Sprawdź uprawnienia przeglądarki.');
+        setStatus('Sesja aktywna: wizual i audio działają.');
+      } catch (_) {
+        setStatus('Wizual działa, ale audio nie wystartowało (sprawdź ustawienia przeglądarki).');
       }
-    });
 
-    stopBtn.addEventListener('click', stopAudio);
+      animationId = requestAnimationFrame(drawHypno);
+    }
+
+    function stopSession() {
+      sessionActive = false;
+      stopAudio();
+
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+
+      tracker.classList.remove('visible');
+      overlay.classList.remove('session-active');
+      startBtn.disabled = false;
+      setStatus('Sesja zatrzymana. Kliknij Start, żeby uruchomić wszystko ponownie.');
+      drawIdle();
+    }
+
+    startBtn.addEventListener('click', startSession);
+    stopBtn.addEventListener('click', stopSession);
+
+    drawIdle();
   </script>
 </body>
 </html>
